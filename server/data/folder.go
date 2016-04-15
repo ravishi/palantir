@@ -6,6 +6,9 @@ import (
 	"time"
 )
 
+const (
+	folderTable = "folders"
+)
 
 type (
 	Folder interface {
@@ -17,9 +20,6 @@ type (
 		thing
 		path string
 	}
-)
-const (
-	folderTable = "folders"
 )
 
 func (f *folder) Path() string {
@@ -78,6 +78,7 @@ func (s *session) FindFolders() ([]Folder, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	folders := make([]Folder, 0)
 
