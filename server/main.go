@@ -1,15 +1,11 @@
 package main
 
 import (
-	"net/http"
-	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine/standard"
+	"github.com/ravishi/palantir/server/api"
 )
 
 func main() {
-	e := echo.New()
-	e.Get("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello, world!")
-	})
+	e := api.Echo()
 	e.Run(standard.New(":5000"))
 }
