@@ -20,8 +20,8 @@ type (
 		Json(string) interface{}
 		JsonString(string) string
 
-		Session() (data.Session, error)
-		PanickingSession() data.Session
+		Session() (*data.Session, error)
+		PanickingSession() *data.Session
 	}
 
 	cxt struct {

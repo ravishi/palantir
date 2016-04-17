@@ -8,15 +8,10 @@ const (
 	cxSessionPrefix = "session"
 )
 
-func (cx *cxt) Session() (data.Session, error) {
-	var err error
-	var s data.Session
+func (cx *cxt) Session() (s *data.Session, err error) {
 	val := cx.get(cxSessionPrefix)
 	if val != nil {
-		var ok bool
-		if s, ok = val.(data.Session); !ok {
-			s = nil
-		}
+		s = val.(*data.Session)
 	}
 	if s == nil {
 		s, err = data.NewSession("./palantir.db")
@@ -27,7 +22,7 @@ func (cx *cxt) Session() (data.Session, error) {
 	return s, err
 }
 
-func (cx *cxt) PanickingSession() data.Session {
+func (cx *cxt) PanickingSession() *data.Session {
 	s, err := cx.Session()
 	if err != nil {
 		panic(err)

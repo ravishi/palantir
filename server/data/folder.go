@@ -1,95 +1,48 @@
 package data
 
-import (
-	_ "github.com/mattn/go-sqlite3"
-	sq "github.com/Masterminds/squirrel"
-	"time"
-)
-
-const (
-	folderTable = "folders"
-)
-
 type (
 	Folder struct {
 		Thing
 		Path string
 	}
+
+	FolderManager interface {
+		CreateFolder(path string) (*Folder, error)
+		RemoveFolder(id int64) error
+		GetFolder(id int64) error
+		FindFolders() ([]Folder, error)
+	}
 )
 
-func (s *session) CreateFolder(path string) (*Folder, error) {
-	var f Folder
-
-	r, err := sq.
-		Insert(folderTable).
-		Columns("created_at", "path").
-		Values(time.Now(), path).
-		RunWith(s.db).
-		Exec()
-
-	if err == nil {
-		f.ID, err = r.LastInsertId()
+func (s *Session) CreateFolder(path string) (*Folder, error) {
+	f := &Folder{
+		Path: path,
 	}
 
-	if err != nil {
-		return nil, err
+	db := s.db.Create(f)
+	if db.Error != nil {
+		return nil, db.Error
 	}
 
-	return &f, nil
+	return f, nil
 }
 
-func (s *session) RemoveFolder(id int64) error {
-	_, err := sq.
-		Delete(folderTable).
-		Where(sq.Eq{"id": id}).
-		RunWith(s.db).
-		Exec()
-
-	return err
+func (s *Session) RemoveFolder(id int64) error {
+	return s.db.Delete(&Folder{Thing: Thing {ID: id}}).Error
 }
 
-func (s *session) GetFolder(id int64) (*Folder, error) {
-	scanner := defaultFolderSelect().
-		Where(sq.Eq{"id": id}).
-		RunWith(s.db).
-		QueryRow()
-
+func (s *Session) GetFolder(id int64) (*Folder, error) {
 	var f Folder
-	if err := defaultFolderScan(scanner, &f); err != nil {
+	if err := s.db.First(&f, id).Error; err != nil {
 		return nil, err
 	}
 	return &f, nil
 }
 
-func (s *session) FindFolders() ([]*Folder, error) {
-	rows, err := defaultFolderSelect().
-		RunWith(s.db).
-		Query()
-
-	if err != nil {
+func (s *Session) FindFolders() ([]Folder, error) {
+	f := make([]Folder, 0)
+	if err := s.db.Find(&f).Error; err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	folders := make([]*Folder, 0)
-
-	for rows.Next() {
-		f := new(Folder)
-		err := defaultFolderScan(rows, f)
-		if err != nil {
-			return nil, err
-		}
-		folders = append(folders, f)
-	}
-
-	return folders, nil
+	return f, nil
 }
-
-func defaultFolderScan(scanner sq.RowScanner, f *Folder) error {
-	return scanner.Scan(&f.ID, &f.CreatedAt, &f.Path)
-}
-
-func defaultFolderSelect() sq.SelectBuilder {
-	return sq.Select("id", "created_at", "path").From(folderTable)
-}
-
