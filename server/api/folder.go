@@ -3,17 +3,7 @@ package api
 import (
 	"net/http"
 	"github.com/labstack/echo"
-	"time"
-	"github.com/ravishi/palantir/server/data"
 	"github.com/ravishi/palantir/server/api/cx"
-)
-
-type (
-	Folder struct {
-		ID int64 `json:"id"`
-		CreatedAt time.Time `json:"createdAt"`
-		Path string `json:"path"`
-	}
 )
 
 func CreateFolder(c echo.Context) error {
@@ -30,7 +20,7 @@ func CreateFolder(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusCreated, c.Echo().URI(ShowFolder, folder.ID()))
+	return c.JSON(http.StatusCreated, c.Echo().URI(ShowFolder, folder.ID))
 }
 
 func RemoveFolder(c echo.Context) error {
@@ -58,7 +48,7 @@ func ShowFolder(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, readFolder(f))
+	return c.JSON(http.StatusOK, f)
 }
 
 func ListFolders(c echo.Context) error {
@@ -67,21 +57,5 @@ func ListFolders(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, readFolderSlice(folders))
-}
-
-func readFolder(f data.Folder) Folder {
-	return Folder{
-		ID: f.ID(),
-		CreatedAt: f.CreatedAt(),
-		Path: f.Path(),
-	}
-}
-
-func readFolderSlice(fs []data.Folder) []Folder {
-	r := make([]Folder, 0)
-	for _, f := range fs {
-		r = append(r, readFolder(f))
-	}
-	return r
+	return c.JSON(http.StatusOK, folders)
 }

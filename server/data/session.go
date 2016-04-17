@@ -8,9 +8,9 @@ import (
 
 type (
 	Session interface {
-		GetFolder(int64) (Folder, error)
-		CreateFolder(string) (Folder, error)
-		FindFolders() ([]Folder, error)
+		GetFolder(int64) (*Folder, error)
+		CreateFolder(string) (*Folder, error)
+		FindFolders() ([]*Folder, error)
 		RemoveFolder(int64) error
 	}
 

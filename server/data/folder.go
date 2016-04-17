@@ -11,23 +11,14 @@ const (
 )
 
 type (
-	Folder interface {
+	Folder struct {
 		Thing
-		Path() string
-	}
-
-	folder struct {
-		thing
-		path string
+		Path string
 	}
 )
 
-func (f *folder) Path() string {
-	return f.path
-}
-
-func (s *session) CreateFolder(path string) (Folder, error) {
-	var f folder
+func (s *session) CreateFolder(path string) (*Folder, error) {
+	var f Folder
 
 	r, err := sq.
 		Insert(folderTable).
@@ -37,7 +28,7 @@ func (s *session) CreateFolder(path string) (Folder, error) {
 		Exec()
 
 	if err == nil {
-		f.id, err = r.LastInsertId()
+		f.ID, err = r.LastInsertId()
 	}
 
 	if err != nil {
@@ -57,20 +48,20 @@ func (s *session) RemoveFolder(id int64) error {
 	return err
 }
 
-func (s *session) GetFolder(id int64) (Folder, error) {
+func (s *session) GetFolder(id int64) (*Folder, error) {
 	scanner := defaultFolderSelect().
 		Where(sq.Eq{"id": id}).
 		RunWith(s.db).
 		QueryRow()
 
-	var f folder
+	var f Folder
 	if err := defaultFolderScan(scanner, &f); err != nil {
 		return nil, err
 	}
 	return &f, nil
 }
 
-func (s *session) FindFolders() ([]Folder, error) {
+func (s *session) FindFolders() ([]*Folder, error) {
 	rows, err := defaultFolderSelect().
 		RunWith(s.db).
 		Query()
@@ -80,10 +71,10 @@ func (s *session) FindFolders() ([]Folder, error) {
 	}
 	defer rows.Close()
 
-	folders := make([]Folder, 0)
+	folders := make([]*Folder, 0)
 
 	for rows.Next() {
-		f := new(folder)
+		f := new(Folder)
 		err := defaultFolderScan(rows, f)
 		if err != nil {
 			return nil, err
@@ -94,8 +85,8 @@ func (s *session) FindFolders() ([]Folder, error) {
 	return folders, nil
 }
 
-func defaultFolderScan(scanner sq.RowScanner, f *folder) error {
-	return scanner.Scan(&f.id, &f.createdAt, &f.path)
+func defaultFolderScan(scanner sq.RowScanner, f *Folder) error {
+	return scanner.Scan(&f.ID, &f.CreatedAt, &f.Path)
 }
 
 func defaultFolderSelect() sq.SelectBuilder {
