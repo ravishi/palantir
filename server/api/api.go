@@ -13,6 +13,7 @@ func Echo() *echo.Echo {
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(middleware.CORS())
 
 	// This middleware allows us to use Cx(c).Json*(key)
 	// to get JSON data from Request's body.

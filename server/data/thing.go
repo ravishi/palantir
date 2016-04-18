@@ -4,7 +4,7 @@ import "time"
 
 type (
 	Thing struct {
-		ID        int64 `gorm:"primary_key"`
+		ID        int64 `gorm:"primary_key" json:"id"`
 		CreatedAt time.Time
 	}
 )
