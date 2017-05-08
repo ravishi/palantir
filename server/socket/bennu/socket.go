@@ -44,13 +44,7 @@ type (
 		ch *Channel
 
 		upgrader *websocket.Upgrader
-
-		broadcaster *broadcaster
 	}
-)
-
-const (
-	Reason
 )
 
 func NewSocketHandler(ch *Channel) *SocketHandler {
@@ -62,7 +56,6 @@ func NewSocketHandler(ch *Channel) *SocketHandler {
 			ReadBufferSize: 1024,
 			WriteBufferSize: 1024,
 		},
-		broadcaster: createBroadcaster(),
 	}
 }
 
@@ -71,11 +64,14 @@ func (s *SocketHandler) Handle(w http.Response, r http.Request) error {
 	if err != nil {
 		return err
 	}
+	// TODO handle ws.Close() possibly returning an error!
 	defer ws.Close()
 
-	return nil
+	c := createConnection(ws)
+
+	return c.Handle()
 }
 
 func (s *SocketHandler) Close() {
-	s.broadcaster.Close()
+	// Nothing here for now
 }
