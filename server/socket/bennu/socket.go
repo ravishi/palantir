@@ -1,77 +1,66 @@
 package bennu
 
-import (
-	"net/http"
-	"github.com/gorilla/websocket"
-)
-
 type (
-	Reason string
-
 	Socket interface {
-	}
+		Topic() string
+		Joined() bool
+		Payload() interface{}
+		Subtopic() string
 
-	JoiningSocket interface {
-		Socket
-
-		// Like {:ok, socket}
 		Ok() error
-
-		// Like {:ok, reply :: map, socket}
-		OkReply(reply interface{}) error
-
-		// Like {:error, reply :: map}
-		ErrorReply(reply interface{}) error
+		Nope() error
+		OkReply(interface{}) error
+		NopeReply(interface{}) error
 	}
 
-	Event interface {
-		Socket
-
-		// Like {:noreply, socket}
-		NoReply() error
-
-		// {:reply, reply, socket}
-		Reply(reply interface{}) error
-
-		// {:stop, :normal, socket}
-		Stop() error
-
-		// {:stop, {:shutdown, term}, socket}
-		Shutdown(error) error
-	}
-
-	SocketHandler struct {
-		ch *Channel
-
-		upgrader *websocket.Upgrader
+	socket struct {
+		topic *topic
+		joined bool
+		channel *Channel
+		payload interface{}
 	}
 )
 
-func NewSocketHandler(ch *Channel) *SocketHandler {
-	return &SocketHandler{
-		ch: ch,
-		upgrader: &websocket.Upgrader{
-			// TODO CheckOrigin, make sure origin is checked by default and is only disabled when wanted (by flag, config, different default for dev server, whatever)
-			CheckOrigin: func (r *http.Request) { return true },
-			ReadBufferSize: 1024,
-			WriteBufferSize: 1024,
-		},
+func (s *socket) Topic() string {
+	return s.topic.topic
+}
+
+func (s *socket) Joined() bool {
+	return s.joined
+}
+
+func (s *socket) Payload() interface{} {
+	return s.payload
+}
+
+func (s *socket) Subtopic() string {
+	return s.topic.subtopic
+}
+
+func (s *socket) Ok() error {
+	return &errOkReply{
+		reply: nil,
+		socket: s,
 	}
 }
 
-func (s *SocketHandler) Handle(w http.Response, r http.Request) error {
-	ws, err := s.upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		return err
+func (s *socket) Nope() error {
+	return &errErrorReply{
+		reply: nil,
+		socket: s,
 	}
-	// TODO handle ws.Close() possibly returning an error!
-	defer ws.Close()
-
-	c := createConnection(ws)
-
-	return c.Handle()
 }
 
-func (s *SocketHandler) Close() {
-	// Nothing here for now
+func (s *socket) OkReply(reply interface{}) error {
+	return &errOkReply{
+		reply: reply,
+		socket: s,
+	}
+}
+
+func (s *socket) NopeReply(reply interface{}) error {
+	return &errErrorReply{
+		reply: reply,
+		socket: s,
+	}
 }
