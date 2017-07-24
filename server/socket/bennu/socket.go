@@ -6,11 +6,14 @@ type (
 		Joined() bool
 		Payload() interface{}
 		Subtopic() string
+	}
+
+	JoinSocket interface {
+		Socket
 
 		Ok() error
-		Nope() error
-		OkReply(interface{}) error
-		NopeReply(interface{}) error
+		Nope(reason interface {}) error
+		OkReply(reply interface{}) error
 	}
 
 	socket struct {
@@ -44,13 +47,6 @@ func (s *socket) Ok() error {
 	}
 }
 
-func (s *socket) Nope() error {
-	return &errErrorReply{
-		reply: nil,
-		socket: s,
-	}
-}
-
 func (s *socket) OkReply(reply interface{}) error {
 	return &errOkReply{
 		reply: reply,
@@ -58,7 +54,7 @@ func (s *socket) OkReply(reply interface{}) error {
 	}
 }
 
-func (s *socket) NopeReply(reply interface{}) error {
+func (s *socket) Nope(reply interface{}) error {
 	return &errErrorReply{
 		reply: reply,
 		socket: s,
