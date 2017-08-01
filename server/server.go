@@ -1,27 +1,32 @@
 package server
 
 import (
+	"fmt"
+
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/ravishi/palantir/server/socket"
-	"fmt"
 )
 
+//noinspection GoNameStartsWithPackageName
 type Server interface {
 	Start(address string) error
 }
 
-type ServerConfig struct {
+type Config struct {
 	Debug bool
 }
 
-func New(config *ServerConfig) Server {
+func New(config *Config) Server {
 	e := echo.New()
 
 	e.Debug = config.Debug
 
 	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
+
+	if !e.Debug {
+		e.Use(middleware.Recover())
+	}
 
 	// XXX For now...
 	e.Use(middleware.CORS())

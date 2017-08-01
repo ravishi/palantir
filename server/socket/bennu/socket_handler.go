@@ -2,8 +2,8 @@ package bennu
 
 import (
 	"net/http"
+
 	"github.com/gorilla/websocket"
-	"fmt"
 )
 
 type (
@@ -53,17 +53,16 @@ func (sock *SocketHandler) Handle(w http.ResponseWriter, r *http.Request) error 
 	return sesh.readUntilErrorOrClose()
 }
 
-func (sock *SocketHandler) handleMessage(msg *envelope) error {
-	if msg.Event == "phx_join" {
-		for _, ch := range sock.channels {
-			err := ch.handleJoin(msg.Topic, msg.Payload)
-			if err == nil {
-				continue
-			} else {
-				return err
+func (sock *SocketHandler) findChannel(topic string) *Channel {
+	// XXX least found is returned, and note that it can still be nil if nothing is found
+	// TODO make "*" a special case, so that order doesn't matter when '*' is used after
+	// everything else, like: Join("room:private", ...); Join("room:*", ...);
+	// NOTE that it would also make the interface more complex to explain and implement
+	var found *Channel
+	for _, ch := range sock.channels {
+			if isTopicMatch(ch.topic, topic) {
+				found = ch
 			}
 		}
-	}
-
-	return fmt.Errorf("TODO: handle other events, like: %s", msg)
+	return found
 }

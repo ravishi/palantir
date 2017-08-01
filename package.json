@@ -31,7 +31,7 @@
     "webpack-dev-server": "^2.6.1"
   },
   "dependencies": {
-    "phoenix": "^1.2.1",
+    "phoenix": "^1.3.0",
     "react": "^15.6.1",
     "react-dom": "^15.6.1"
   }

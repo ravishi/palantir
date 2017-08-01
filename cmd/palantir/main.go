@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+
 	"github.com/alecthomas/kingpin"
 	"github.com/ravishi/palantir/server"
 )
@@ -15,7 +16,7 @@ var (
 func main() {
 	kingpin.Parse()
 
-	s := server.New(&server.ServerConfig{
+	s := server.New(&server.Config{
 		Debug: *debug,
 	})
 

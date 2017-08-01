@@ -8,15 +8,25 @@ type (
 		Subtopic() string
 	}
 
+	InSocket interface {
+		Socket
+
+		//Stop(reason string, reply interface{}) error
+		Ok() error
+		Reply(reply interface{}) error
+		NoReply() error
+	}
+
 	JoinSocket interface {
 		Socket
 
 		Ok() error
-		Nope(reason interface {}) error
-		OkReply(reply interface{}) error
+		Reply(reply interface{}) error
+		Error(reason interface {}) error
 	}
 
 	socket struct {
+		event string
 		topic *topic
 		joined bool
 		channel *Channel
@@ -41,22 +51,25 @@ func (s *socket) Subtopic() string {
 }
 
 func (s *socket) Ok() error {
-	return &errOkReply{
-		reply: nil,
-		socket: s,
-	}
+	return s.Reply(nil)
 }
 
-func (s *socket) OkReply(reply interface{}) error {
+func (s *socket) Reply(reply interface{}) error {
 	return &errOkReply{
 		reply: reply,
 		socket: s,
 	}
 }
 
-func (s *socket) Nope(reply interface{}) error {
+func (s *socket) NoReply() error {
+	return &errNoReply{
+		socket: s,
+	}
+}
+
+func (s *socket) Error(reason interface{}) error {
 	return &errErrorReply{
-		reply: reply,
+		reason: reason,
 		socket: s,
 	}
 }

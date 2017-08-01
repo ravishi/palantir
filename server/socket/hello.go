@@ -10,9 +10,11 @@ func ChatSocket() *bennu.SocketHandler {
 	room := b.Channel("room:*")
 
 	room.Join("room:lobby", func (s bennu.JoinSocket) error {
-		return s.OkReply(map[string][]string{
-			"messages": []string{"lew"},
-		})
+		return nil
+	})
+
+	room.HandleIn("new_msg", func (s bennu.InSocket) error {
+		return nil
 	})
 
 	return b

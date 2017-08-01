@@ -11,7 +11,7 @@ class Chat extends React.Component {
     }
 
     componentDidMount() {
-        const socket = new Socket("ws://localhost:8080/ws");
+        const socket = new Socket("ws://localhost:8080/ws", {logger: console.log.bind(console)});
 
         socket.connect({greetings: 'Mellon!'});
 
@@ -20,20 +20,20 @@ class Chat extends React.Component {
         this.channel.on("new_msg", this.onNewMessage.bind(this));
 
         this.channel.join()
-            .receive("ok", ({messages}) => this.setState({messages}))
+            .receive("ok", (response) => this.setState({messages: (response || {}).messages || []}))
             .receive("error", ({reason}) => console.log("failed join", reason))
             .receive("timeout", () => console.log("Networking issue. Still waiting..."));
     }
 
     onNewMessage(msg) {
         this.setState({
-            messages: [...messages, msg]
+            messages: [...this.state.messages, msg]
         })
     }
 
     sendMessage(msg) {
         this.channel.push("new_msg", {body: msg}, 3000)
-            .receive("ok", this.onNewMessage.bind(this))
+            .receive("ok", () => this.onNewMessage.bind(this)(msg))
             .receive("error", (reasons) => console.log("create failed", reasons))
             .receive("timeout", () => console.log("Networking issue..."))
     }

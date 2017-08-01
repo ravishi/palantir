@@ -1,21 +1,31 @@
 package bennu
 
 import (
-	"strings"
 	"fmt"
+	"strings"
 )
 
 type (
-	Handler func(JoinSocket) error
+	InHandler func(InSocket) error
+	JoinHandler func(JoinSocket) error
 
 	Channel struct {
-		topic string
-		handler *SocketHandler
+		topic        string
+		handler      *SocketHandler
+
+		inHandlers   []*inHandler
 		joinHandlers []*joinHandler
 	}
 )
 
-func (ch *Channel) Join(topic string, handler Handler) {
+func (ch *Channel) HandleIn(event string, handler InHandler) {
+	ch.inHandlers = append(ch.inHandlers, &inHandler{
+		event: event,
+		handler: handler,
+	})
+}
+
+func (ch *Channel) Join(topic string, handler JoinHandler) {
 	ch.joinHandlers = append(ch.joinHandlers, &joinHandler{
 		topic: topic,
 		handler: handler,
@@ -23,8 +33,8 @@ func (ch *Channel) Join(topic string, handler Handler) {
 }
 
 func (ch *Channel) handleJoin(topic string, payload interface{}) error {
-	handler := ch.searchJoinHandler(topic)
-	if handler == nil {
+	h := ch.searchJoinHandler(topic)
+	if h == nil {
 		return nil
 	}
 
@@ -33,16 +43,13 @@ func (ch *Channel) handleJoin(topic string, payload interface{}) error {
 		channel: ch,
 		payload: payload,
 	}
-
-	err := handler.handler(s)
+	err := h.handler(s)
 	if err == nil {
 		return ch.join(s, nil)
 	} else if ok , isOk := err.(*errOkReply); isOk {
 		return ch.join(ok.socket, ok.reply)
-	} else if err, isErr := err.(*errErrorReply); isErr {
-		return err
 	} else {
-		return fmt.Errorf("join failed: it didn't return either Ok() or Error(), it just crashed with %s", err)
+		return err
 	}
 }
 
@@ -57,11 +64,42 @@ func (ch *Channel) join(s *socket, reply interface{}) error {
 	}
 }
 
+func (ch *Channel) handleIn(topic, event string, payload interface{}) error {
+	handler := ch.searchInHandler(event)
+	if handler == nil {
+		return nil
+	}
 
-// internal info about the handler, mostly used for routing
+	s := &socket{
+		topic: asTopic(topic),
+		event: event,
+		channel: ch,
+		payload: payload,
+	}
+
+	err := handler.handler(s)
+	if err == nil {
+		return s.Ok()
+	} else if _ , isOk := err.(*errOkReply); isOk {
+		return err
+	} else if err, isErr := err.(*errErrorReply); isErr {
+		return err
+	} else {
+		return fmt.Errorf("handleIn failed: it didn't return either a reply or empty, it just crashed with %sesh", err)
+	}
+
+}
+
+
+// internal info about the handlers, mostly used for routing
+type inHandler struct {
+	event   string
+	handler InHandler
+}
+
 type joinHandler struct {
-	topic string
-	handler Handler
+	topic   string
+	handler JoinHandler
 }
 
 func (ch *Channel) searchJoinHandler(topic string) *joinHandler {
@@ -77,7 +115,18 @@ func (ch *Channel) searchJoinHandler(topic string) *joinHandler {
 	return found
 }
 
-// used internally for topic sorting comparison
+func (ch *Channel) searchInHandler(event string) *inHandler {
+	// Again, latest found has precedence, so we're not breaking out of the loop
+	var found *inHandler
+	for _, h := range ch.inHandlers {
+		if h.event == event {
+			found = h
+		}
+	}
+	return found
+}
+
+// used internally for topic sorting and comparison
 type topic struct {
 	topic string
 	subtopic string
@@ -116,12 +165,12 @@ func (err *errNotHandled) Error() string {
 
 // returned when a channel.Join method returns c.Error() or c.ErrorReply(reply)
 type errErrorReply struct {
-	reply interface{}
+	reason interface{}
 	socket *socket
 }
 
 func (err *errErrorReply) Error() string {
-	return fmt.Sprintf("error reply: %s", err.reply)
+	return fmt.Sprintf("error reply: %sesh", err.reason)
 }
 
 
@@ -133,4 +182,13 @@ type errOkReply struct {
 
 func (err *errOkReply) Error() string {
 	return "ok"
+}
+
+// returned when a channel.HandleIn method returns either `nil` or `socket.NoReply()`
+type errNoReply struct {
+	socket *socket
+}
+
+func (err *errNoReply) Error() string {
+	return "no reply"
 }
