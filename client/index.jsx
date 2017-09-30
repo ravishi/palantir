@@ -27,13 +27,13 @@ class Chat extends React.Component {
 
     onNewMessage(msg) {
         this.setState({
-            messages: [...this.state.messages, msg]
+            messages: [...this.state.messages, msg.Body]
         })
     }
 
     sendMessage(msg) {
-        this.channel.push("new_msg", {body: msg}, 3000)
-            .receive("ok", () => this.onNewMessage.bind(this)(msg))
+        this.channel.push("new_msg", {Body: msg}, 3000)
+            .receive("ok", () => console.log('message sent'))
             .receive("error", (reasons) => console.log("create failed", reasons))
             .receive("timeout", () => console.log("Networking issue..."))
     }
@@ -50,7 +50,7 @@ class Chat extends React.Component {
                 <input type="text" ref={ref => this.input = ref } />
                 <button type="button" onClick={this.onSubmitMessage.bind(this)}>send</button>
                 <div>
-                    {<pre>{JSON.stringify(messages, '  ')}</pre>}
+                    {<pre>{JSON.stringify(messages, null, 2)}</pre>}
                 </div>
             </div>
         )

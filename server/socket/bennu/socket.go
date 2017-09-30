@@ -15,7 +15,10 @@ type (
 		Ok() error
 		Reply(reply interface{}) error
 		NoReply() error
+
+		Broadcast(string, interface{})
 	}
+
 
 	JoinSocket interface {
 		Socket
@@ -31,6 +34,7 @@ type (
 		joined bool
 		channel *Channel
 		payload interface{}
+		session *session
 	}
 )
 
@@ -72,4 +76,14 @@ func (s *socket) Error(reason interface{}) error {
 		reason: reason,
 		socket: s,
 	}
+}
+
+func (s *socket) Broadcast(event string, payload interface{}) {
+	s.session.handler.bc.Publish(&envelope{
+		//JoinRef string
+		//Ref string
+		Topic: s.Topic() + ":" + s.Subtopic(),
+		Event: event,
+		Payload: payload,
+	})
 }

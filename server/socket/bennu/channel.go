@@ -13,6 +13,7 @@ type (
 		topic        string
 		handler      *SocketHandler
 
+		bc *broadcaster
 		inHandlers   []*inHandler
 		joinHandlers []*joinHandler
 	}
@@ -32,49 +33,34 @@ func (ch *Channel) Join(topic string, handler JoinHandler) {
 	})
 }
 
-func (ch *Channel) handleJoin(topic string, payload interface{}) error {
-	h := ch.searchJoinHandler(topic)
+func (ch *Channel) handleJoin(s *socket) (bool, error) {
+	h := ch.searchJoinHandler(s.topic.toStringLol())
 	if h == nil {
-		return nil
+		return false, nil
 	}
 
-	s := &socket{
-		topic: asTopic(topic),
-		channel: ch,
-		payload: payload,
-	}
 	err := h.handler(s)
 	if err == nil {
-		return ch.join(s, nil)
-	} else if ok , isOk := err.(*errOkReply); isOk {
-		return ch.join(ok.socket, ok.reply)
+		return true, ch.join(s, nil)
+		} else if ok , isOk := err.(*errOkReply); isOk {
+		return true, ch.join(ok.socket, ok.reply)
 	} else {
-		return err
+		return false, err
 	}
 }
 
 func (ch *Channel) join(s *socket, reply interface{}) error {
 	s.joined = true
-
-	// TODO subscribe to the broadcasting
-
 	return &errOkReply{
 		socket: s,
 		reply: reply,
 	}
 }
 
-func (ch *Channel) handleIn(topic, event string, payload interface{}) error {
-	handler := ch.searchInHandler(event)
+func (ch *Channel) handleIn(s *socket) error {
+	handler := ch.searchInHandler(s.event)
 	if handler == nil {
 		return nil
-	}
-
-	s := &socket{
-		topic: asTopic(topic),
-		event: event,
-		channel: ch,
-		payload: payload,
 	}
 
 	err := handler.handler(s)
@@ -144,6 +130,10 @@ func asTopic(s string) *topic {
 	return t
 }
 
+func (t *topic) toStringLol() string {
+	return t.topic + ":" + t.subtopic
+}
+
 func (t *topic) isMatch(other *topic) bool {
 	return t.topic == other.topic && (t.subtopic == "*" || t.subtopic == other.subtopic)
 }
@@ -174,7 +164,7 @@ func (err *errErrorReply) Error() string {
 }
 
 
-// returned when a channel.Join method returns c.Ok() or c.OkReply(reply)
+// returned when a channel.Join method returns `nil`, `c.Ok()` or `c.Reply(reply)`
 type errOkReply struct {
 	reply interface{}
 	socket *socket
@@ -184,7 +174,7 @@ func (err *errOkReply) Error() string {
 	return "ok"
 }
 
-// returned when a channel.HandleIn method returns either `nil` or `socket.NoReply()`
+// returned when a channel.HandleIn method returns `socket.NoReply()`
 type errNoReply struct {
 	socket *socket
 }

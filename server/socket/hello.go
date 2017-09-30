@@ -14,6 +14,7 @@ func ChatSocket() *bennu.SocketHandler {
 	})
 
 	room.HandleIn("new_msg", func (s bennu.InSocket) error {
+		s.Broadcast("new_msg", s.Payload())
 		return nil
 	})
 

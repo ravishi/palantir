@@ -8,6 +8,7 @@ import (
 
 type (
 	SocketHandler struct {
+		bc *broadcaster
 		channels []*Channel
 		upgrader websocket.Upgrader
 	}
@@ -15,6 +16,7 @@ type (
 
 func New() *SocketHandler {
 	return &SocketHandler{
+		bc: newBroadcaster(),
 		channels: make([]*Channel, 0),
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool { return true },
