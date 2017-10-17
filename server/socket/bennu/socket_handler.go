@@ -19,6 +19,9 @@ func New(options ...func(*SocketHandler) error) (*SocketHandler, error) {
 		bc: newBroadcaster(),
 		channels: make([]*Channel, 0),
 		upgrader: websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
 			ReadBufferSize: 1024,
 			WriteBufferSize: 1024,
 		},
