@@ -17,7 +17,7 @@ type Config struct {
 	Debug bool
 }
 
-func New(config *Config) Server {
+func New(config *Config) (Server, error) {
 	e := echo.New()
 
 	e.Debug = config.Debug
@@ -31,16 +31,18 @@ func New(config *Config) Server {
 	// XXX For now...
 	e.Use(middleware.CORS())
 
-	s := socket.ChatSocket()
-
+	s, err := socket.ChatSocket()
+	if err != nil {
+		return nil, err
+	}
 
 	e.GET("/ws/websocket", func(c echo.Context) error {
 		err := s.Handle(c.Response().Writer, c.Request())
 		if err != nil {
-			fmt.Println("ERROR at e.GET:", err)
+			fmt.Errorf("ERROR at e.GET: %s\n", err)
 		}
 		return err
 	})
 
-	return e
+	return e, nil
 }

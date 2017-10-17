@@ -13,7 +13,7 @@ class Chat extends React.Component {
     componentDidMount() {
         const socket = new Socket("ws://localhost:8080/ws", {logger: console.log.bind(console)});
 
-        socket.connect({greetings: 'Mellon!'});
+        socket.connect({greetings: 'mellon'});
 
         this.channel = socket.channel('room:lobby');
 
@@ -21,11 +21,12 @@ class Chat extends React.Component {
 
         this.channel.join()
             .receive("ok", (response) => this.setState({messages: (response || {}).messages || []}))
-            .receive("error", ({reason}) => console.log("failed join", reason))
-            .receive("timeout", () => console.log("Networking issue. Still waiting..."));
+            .receive("error", ({reason}) => console.log("failed to join chat room", reason))
+            .receive("timeout", () => console.log("failed to join chat room: timeout"));
     }
 
     onNewMessage(msg) {
+        console.log('message received');
         this.setState({
             messages: [...this.state.messages, msg.Body]
         })
@@ -34,8 +35,8 @@ class Chat extends React.Component {
     sendMessage(msg) {
         this.channel.push("new_msg", {Body: msg}, 3000)
             .receive("ok", () => console.log('message sent'))
-            .receive("error", (reasons) => console.log("create failed", reasons))
-            .receive("timeout", () => console.log("Networking issue..."))
+            .receive("error", (reasons) => console.error("failed to send message", reasons))
+            .receive("timeout", () => console.error("failed to send message: timeout"))
     }
 
     onSubmitMessage() {
@@ -48,7 +49,7 @@ class Chat extends React.Component {
         return (
             <div>
                 <input type="text" ref={ref => this.input = ref } />
-                <button type="button" onClick={this.onSubmitMessage.bind(this)}>send</button>
+                <button type="button" onClick={this.onSubmitMessage.bind(this, 'sent')}>send</button>
                 <div>
                     {<pre>{JSON.stringify(messages, null, 2)}</pre>}
                 </div>

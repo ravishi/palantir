@@ -14,40 +14,53 @@ type (
 	}
 )
 
-func New() *SocketHandler {
-	return &SocketHandler{
+func New(options ...func(*SocketHandler) error) (*SocketHandler, error) {
+	s := &SocketHandler{
 		bc: newBroadcaster(),
 		channels: make([]*Channel, 0),
 		upgrader: websocket.Upgrader{
-			CheckOrigin: func(r *http.Request) bool { return true },
 			ReadBufferSize: 1024,
 			WriteBufferSize: 1024,
 		},
 	}
+
+	if err := s.setOption(options...); err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }
 
-func (sock *SocketHandler) Channel(topic string) *Channel {
+func (h *SocketHandler) setOption(options ...func(*SocketHandler) error) error {
+	for _, opt := range options {
+		if err := opt(h); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (h *SocketHandler) Channel(topic string) *Channel {
 	ch := &Channel{
 		topic: topic,
-		handler: sock,
+		handler: h,
 
 		joinHandlers: make([]*joinHandler, 0),
 	}
 
-	sock.channels = append(sock.channels, ch)
+	h.channels = append(h.channels, ch)
 
 	return ch
 }
 
-func (sock *SocketHandler) Handle(w http.ResponseWriter, r *http.Request) error {
-	conn, err := sock.upgrader.Upgrade(w, r, nil)
+func (h *SocketHandler) Handle(w http.ResponseWriter, r *http.Request) error {
+	conn, err := h.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
-	sesh := sock.newSession(r, conn)
-
+	sesh := h.newSession(r, conn)
 	defer sesh.close()
 
 	go sesh.writer()
@@ -55,13 +68,13 @@ func (sock *SocketHandler) Handle(w http.ResponseWriter, r *http.Request) error 
 	return sesh.readUntilErrorOrClose()
 }
 
-func (sock *SocketHandler) findChannel(topic string) *Channel {
+func (h *SocketHandler) findChannel(topic string) *Channel {
 	// XXX least found is returned, and note that it can still be nil if nothing is found
 	// TODO make "*" a special case, so that order doesn't matter when '*' is used after
 	// everything else, like: Join("room:private", ...); Join("room:*", ...);
 	// NOTE that it would also make the interface more complex to explain and implement
 	var found *Channel
-	for _, ch := range sock.channels {
+	for _, ch := range h.channels {
 			if isTopicMatch(ch.topic, topic) {
 				found = ch
 			}

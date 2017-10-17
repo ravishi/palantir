@@ -17,14 +17,14 @@ type session struct {
 	handler *SocketHandler
 }
 
-func (sock *SocketHandler) newSession(r *http.Request, conn *websocket.Conn) *session {
+func (h *SocketHandler) newSession(r *http.Request, conn *websocket.Conn) *session {
 	s := &session{
-		inc: make(chan *envelope),
-		conn: conn,
-		handler: sock,
+		inc:     make(chan *envelope),
+		conn:    conn,
+		handler: h,
 		request: r,
 	}
-	sock.bc.Subscribe(s.inc)
+	h.bc.Subscribe(s.inc)
 	return s
 }
 

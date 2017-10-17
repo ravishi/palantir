@@ -4,8 +4,11 @@ import (
 	"github.com/ravishi/palantir/server/socket/bennu"
 )
 
-func ChatSocket() *bennu.SocketHandler {
-	b := bennu.New()
+func ChatSocket() (*bennu.SocketHandler, error) {
+	b, err := bennu.New()
+	if err != nil {
+		return nil, err
+	}
 
 	room := b.Channel("room:*")
 
@@ -18,5 +21,5 @@ func ChatSocket() *bennu.SocketHandler {
 		return nil
 	})
 
-	return b
+	return b, nil
 }

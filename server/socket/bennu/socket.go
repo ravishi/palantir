@@ -12,7 +12,6 @@ type (
 		Socket
 
 		//Stop(reason string, reply interface{}) error
-		Ok() error
 		Reply(reply interface{}) error
 		NoReply() error
 
@@ -23,7 +22,6 @@ type (
 	JoinSocket interface {
 		Socket
 
-		Ok() error
 		Reply(reply interface{}) error
 		Error(reason interface {}) error
 	}
@@ -55,7 +53,7 @@ func (s *socket) Subtopic() string {
 }
 
 func (s *socket) Ok() error {
-	return s.Reply(nil)
+	return nil
 }
 
 func (s *socket) Reply(reply interface{}) error {

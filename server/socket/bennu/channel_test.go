@@ -11,7 +11,9 @@ import (
 func TestChannelJoin(t *testing.T) {
 	plz := require.New(t)
 
-	h := New()
+	h, err := New()
+
+	plz.Nil(err)
 
 	ch := h.Channel("room:*")
 

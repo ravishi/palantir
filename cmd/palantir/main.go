@@ -16,9 +16,14 @@ var (
 func main() {
 	kingpin.Parse()
 
-	s := server.New(&server.Config{
+	s, err := server.New(&server.Config{
 		Debug: *debug,
 	})
+
+	if err != nil {
+		fmt.Println(os.Stderr, err)
+		os.Exit(1)
+	}
 
 	if err := s.Start(*address); err != nil {
 		fmt.Fprintln(os.Stderr, err)
